@@ -3,6 +3,10 @@
   --info-bg: hsl(192, 89%, 92%);
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   background-color: var(--bg);
   overflow-x: scroll;
@@ -26,3 +30,24 @@ body {
   right: 10px;
 }
 
+.cellTop {
+  display: inline-block;
+  position: relative;
+  width: 90px;
+  height: 50px;
+  outline: 1px solid black;
+}
+
+.cellProgress {
+  z-index: 0;
+  position: absolute;
+  height: 100%;
+  width: 0%;
+  background-color: green;
+}
+
+.cellFG {
+  z-index: 30;
+  position: relative;
+  padding-left: 2px;
+}

@@ -10,7 +10,6 @@
   add correct mouse cursors
   confirm mobile support
   add import/export
-  add reset
   display info on cells
   process ticks of active cells
   style modal dialogs
@@ -24,6 +23,7 @@ class App {
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
+    this.runningCells = [];
 
     this.initCells();
 
@@ -35,8 +35,6 @@ class App {
     const tickInterval = 1000 / 30;
     const workFraction = 0.5; //TODO: tune this value
     this.tickWorkTime = tickInterval * workFraction;
-
-    this.val = 0;
 
     setInterval(() => this.tick(), tickInterval);
     setInterval(() => this.saveToStorage(), 5000);
@@ -64,14 +62,22 @@ class App {
   initCells() {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
+        let cell;
         if (this.state.cells[`${row},${col}`] === undefined) {
-          const cell = {
+          cell = {
             cnt: this.getBellNum(row, col), //count
             att: 0, //attempts
             fnd: 0, //found
-            cmp: 0  //complete
+            cmp: 0, //complete,
+            run: 0  //running
           };
           this.state.cells[`${row},${col}`] = cell;
+        } else {
+          cell = this.state.cells[`${row},${col}`];
+        }
+
+        if (cell.run === 1) {
+          this.runningCells.push(cell);
         }
       }
     }
@@ -91,8 +97,12 @@ class App {
       });
     }
 
-    if (text !== undefined && text.length > 0) {
-      e.innerText = text;
+    if (text !== undefined) {
+      if (typeof text === 'string' && text.length > 0) {
+        e.innerText = text;
+      } else if (typeof text === 'number') {
+        e.innerText = text;
+      }
     }
 
     if (parentElement !== undefined) {
@@ -117,7 +127,19 @@ class App {
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
       for (let col = 1; col <= row; col++) {
-        const cellE = this.createElement(rowE, 'div', '', 'cell', `${row},${col}`);
+        const cellInfo = this.state.cells[`${row},${col}`];
+        const cellC = this.createElement(rowE, 'div', '', 'cellTop');
+        const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, 'cellProgress');
+        const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
+        const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', 'l=+5%');
+        const cellT = this.createElement(cellC, 'div', `txt_${row},${col}`, 'cellFG,cellTxt', '53/1321');
+        cellC.onclick = () => this.clickCell(row, col);
+
+        if (cellInfo.cnt % 2 === 0) {
+          cellC.style.backgroundColor = 'white';
+        } else {
+          cellC.style.backgroundColor = 'blue';
+        }
       }
     }
   }
@@ -147,6 +169,7 @@ class App {
 
     const saveString = JSON.stringify(this.state);
     localStorage.setItem('KBToT', saveString);
+    console.log('saved');
   }
 
   reset() {
@@ -156,13 +179,38 @@ class App {
   }
 
   draw() {
-    document.getElementById('dtest').innerText = `${this.val} saved ${this.state.savedTicks}`;
+    //TODO: don't redraw things that aren't changing
+    for (let row = 1; row <= this.rows; row++) {
+      for (let col = 1; col <= row; col++) {
+        const cell = this.state.cells[`${row},${col}`]
+        this.UI[`txt_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd}`;
+        const percent = 100 * cell.fnd / cell.cnt;
+        this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
+      }
+    }
+    
 
     window.requestAnimationFrame(() => this.draw());
   }
 
   processTick() {
-    this.val += 1;
+    this.runningCells = this.runningCells.filter( cell => {
+      const rndVal = Math.random();
+      const thresh = (cell.cnt - cell.fnd) / cell.cnt;
+      cell.att += 1;
+      if (rndVal <= thresh) {
+        cell.fnd += 1;
+        cell.cmp = 1;
+      }
+
+      if (cell.fnd >= cell.cnt) {
+        cell.cmp = 1;
+        cell.run = 0;
+        return false;
+      }
+
+      return true;
+    });
   }
 
   tick() {
@@ -198,6 +246,22 @@ class App {
   closeModal(id) {
     this.UI[id].close();
     document.querySelector('body').classList.remove('blur2px');
+  }
+
+  startCell(cellInfo) {
+    cellInfo.att = 0;
+    cellInfo.fnd = 0;
+    cellInfo.cmp = 0;
+    cellInfo.run = 1;
+    this.runningCells.push(cellInfo);
+  }
+
+  clickCell(row, col) {
+    console.log('click', row, col);
+    const cellInfo = this.state.cells[`${row},${col}`];
+    if (cellInfo.run === 0) {
+      this.startCell(cellInfo);
+    }
   }
 }
 

@@ -56,4 +56,6 @@ Can we store a sufficient amount of info in the localstorage? 5MiB
   ascii characters. this would get to max of about 35e6. When we save/load
   we don't need to store what values have been found, just how many are
   left to find!
+maybe luck comes from the luck of the cells that feed into the current cell?
+  how would this work for k=1 cells?
 
