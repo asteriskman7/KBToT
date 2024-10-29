@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Kristen Bell's Triangle of Transcendence</title>
+    <!-- <link rel="icon" href="favicon.png" id="linkIcon"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">    
+  </head>
+  <body>
+    <div id='infoBox'>
+      <div id='title' class='title'>Kristen Bell's Triangle of Transcendence</div>
+      <div>Total play time: <span id='infoPlayTime'></span></div>
+      <div>Next completion in: <span id='infoNext'></span></div>
+      <div>Total time remaining: <span id='infoTimeRemaining'></span></div>
+      <div id='infoProgressContainer'><div id='infoProgress'></div></div>
+      <div>There are no upgrades.<br>There is only Kristen Bell.</div>
+      <hr>
+      <div>Discuss on <a href='https://discord.gg/pC9RY5B'>discord</a>.</div>
+      <div><button id='resetButton'>Reset Game</button><button id='imexShow'>Import/Export</button></div>
+      <div id='att'>&#128012; approved</div>
+    </div>  
+    <dialog id='resetContainer'>
+      Are you sure you want to reset?
+      <div>
+        <button id='resetYes' class='buttonUtil'>Yes</button>
+        <button id='resetNo' class='buttonUtil'>No</button>
+      </div>
+    </dialog>    
+    <dialog id='winContainer'>
+      <div>
+        Thank you for completing <span class='title'>Pedro Pascal's Triangle of Prestige</span>!
+      </div>
+      <div>
+        You are my ultimate fan!
+      </div>
+      <div>
+        I am both impressed and a little worried but don't worry, daddy will always love you!
+      </div>
+      <div>
+        Your total play time was <span id='winPlayTime'></span>.
+      </div>
+      <!-- <img id='winImg' src='./ppoint.png'> -->
+      <button id='winClose'>Close</button>
+    </dialog>    
+    <dialog id='imexContainer'>
+      <div>Import / Export</div>
+      <textarea id='imexText' rows='4' cols='20'></textarea>
+      <div>
+        <button id='imexImport' class='buttonUtil'>Import</button>
+        <button id='imexExport' class='buttonUtil'>Export</button>
+        <button id='imexClose' class='buttonUtil'>Close</button>
+      </div>
+    </dialog>    
+    <div id='cellsContainer'></div>
+    <div id='dtest'></div>
+    <script src='index.js'></script>
+  </body>
+</html>

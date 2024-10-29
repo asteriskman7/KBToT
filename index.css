@@ -1,0 +1,28 @@
+:root {
+  --bg: hsl(192, 89%, 80%);
+  --info-bg: hsl(192, 89%, 92%);
+}
+
+body {
+  background-color: var(--bg);
+  overflow-x: scroll;
+  font-family: 'Chivo Mono', monospace;
+  font-size: 10pt;
+  letter-spacing: -0.5pt;
+}
+
+.blur2px {
+  filter: blur(2px);
+}
+
+#infoBox {
+  background-color: var(--info-bg);
+  position: fixed;
+  width: 28em;
+  z-index: 100;
+  outline: 1px solid black;
+  padding: 0.5em;
+  box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
+  right: 10px;
+}
+
