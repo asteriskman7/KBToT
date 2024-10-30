@@ -9,13 +9,6 @@
   add end of game
   add correct mouse cursors
   confirm mobile support
-  display all necessary info on cells nicely
-    cell number
-    luck
-    attempts
-    progress value
-    expected attempts
-    estimated time remaining
   style modal dialogs
   style main game
 */
@@ -29,7 +22,7 @@ class App {
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
-    this.runningCells = [];
+    this.cellList = [];
 
     this.initCells();
 
@@ -140,16 +133,17 @@ class App {
       return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}:${timeObj.s.toFixed(1).padStart(4,0)}`;
     }
 
-    if (timeObj.y > 0 || timeObj.d > 0 || timeObj.h > 0) {
+    //if (timeObj.y > 0 || timeObj.d > 0 || timeObj.h > 0) {
       return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}`;
-    } else {
+    //} else {
       //return `${timeObj.m.toString().padStart(2,0)}:${timeObj.s.toFixed(1).padStart(4,0)}`;
-      return `${timeObj.m.toString().padStart(2,0)}:${Math.ceil(timeObj.s).toString().padStart(2,0)}`;
-    }
+    //  return `${timeObj.m.toString().padStart(2,0)}:${Math.ceil(timeObj.s).toString().padStart(2,0)}`;
+    //}
 
   }  
 
   initCells() {
+    this.totalCount = 0;
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         let cell;
@@ -170,9 +164,9 @@ class App {
           cell = this.state.cells[`${row},${col}`];
         }
 
-        if (cell.run === 1) {
-          this.runningCells.push(cell);
-        }
+        this.totalCount += cell.cnt;
+
+        this.cellList.push(cell);
       }
     }
   }
@@ -209,7 +203,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -268,7 +262,6 @@ class App {
 
     const saveString = JSON.stringify(this.state);
     localStorage.setItem(this.storageKey, saveString);
-    console.log('saved');
   }
 
   reset() {
@@ -344,6 +337,9 @@ class App {
 
   draw() {
     //TODO: don't redraw things that aren't changing
+    let minTimeRemaining = Infinity;
+    let totalTimeRemaining = 0;
+    let completeCount = 0;
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         const cell = this.state.cells[`${row},${col}`]
@@ -355,18 +351,40 @@ class App {
         } else {
           this.UI[`luck_${row},${col}`].innerText = `${cell.lck.toFixed(1)}`
         }
-        this.UI[`time_${row},${col}`].innerText = `${this.remainingToStr(this.calcExpTime(cell))}`;
+        if (cell.run === 1 || cell.cmp === 0) {
+          const expTime = this.calcExpTime(cell);
+          if (cell.cmp === 0) {
+            totalTimeRemaining += expTime;
+          }
+          if (cell.run === 1) {
+            minTimeRemaining = Math.min(minTimeRemaining, expTime);
+          }
+          this.UI[`time_${row},${col}`].innerText = `${this.remainingToStr(expTime)}`;
+        } else {
+          this.UI[`time_${row},${col}`].innerText = '.'; //TODO: figure out why layout breaks if this is empty on a row where others aren't like when 203 cell is done but the rest of the row isn't
+        }
+
+        completeCount += cell.fnd;
       }
     }
     
     const curTime = (new Date()).getTime();
     this.UI.infoPlayTime.innerText = this.remainingToStr(curTime - this.state.gameStart, true);
+    this.UI.infoNext.innerText = this.remainingToStr(minTimeRemaining);
+    this.UI.infoTimeRemaining.innerText = this.remainingToStr(totalTimeRemaining);
+
+    
+    const percent = 100 * completeCount / this.totalCount;
+    //this.UI.infoProgress.style.width = `${(curTime % 10000) * 100 / 10000}%`;
+    this.UI.infoProgress.style.width = `${percent}%`;
 
     window.requestAnimationFrame(() => this.draw());
   }
 
   processTick() {
-    this.runningCells = this.runningCells.filter( cell => {
+    this.cellList.forEach( cell => {
+      if (cell.run === 0) {return;}
+
       const rndVal = Math.random();
       const thresh = (cell.cnt - cell.fnd) / cell.cnt;
       cell.att += 1;
@@ -380,11 +398,7 @@ class App {
         this.state.totalLuck -= cell.lck;
         cell.lck = this.calcLuck(cell);
         this.state.totalLuck += cell.lck;
-        console.log('total luck', this.state.totalLuck);
-        return false;
       }
-
-      return true;
     });
   }
 
@@ -433,7 +447,6 @@ class App {
     cellInfo.att = 0;
     cellInfo.fnd = 0;
     cellInfo.run = 1;
-    this.runningCells.push(cellInfo);
   }
 
   isCellClickable(row, col) {

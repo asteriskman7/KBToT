@@ -1,6 +1,7 @@
 :root {
   --bg: hsl(192, 89%, 80%);
   --info-bg: hsl(192, 89%, 92%);
+  --cell-progress: yellow;
 }
 
 * {
@@ -30,11 +31,28 @@ body {
   right: 10px;
 }
 
+#infoProgressContainer {
+  width: 100%;
+  height: 12px;
+  background: white;
+  box-shadow: inset 1px 1px 3px -1px black;
+}
+
+#infoProgress {
+  width: 0%;
+  height: 12px;
+  background: var(--cell-progress);
+}
+
+#cellsContainer {
+  width: 1900px;
+}
+
 .cellTop {
   display: inline-block;
   position: relative;
-  width: 90px;
-  height: 50px;
+  width: 140px;
+  height: 68px;
   outline: 1px solid black;
 }
 
@@ -50,4 +68,10 @@ body {
   z-index: 30;
   position: relative;
   padding-left: 2px;
+}
+
+#att {
+  text-align: right;
+  font-size: xx-small;
+  filter: opacity(0.2);
 }
