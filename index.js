@@ -10,6 +10,12 @@
   add correct mouse cursors
   confirm mobile support
   display all necessary info on cells nicely
+    cell number
+    luck
+    attempts
+    progress value
+    expected attempts
+    estimated time remaining
   style modal dialogs
   style main game
 */
@@ -23,8 +29,6 @@ class App {
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
-    this.memoe = {}; //memoization storage for getExpectedTries
-    this.memos = {}; //memoization storage for getStdDev
     this.runningCells = [];
 
     this.initCells();
@@ -61,31 +65,41 @@ class App {
     return val;
   }
 
-  getExpectedTries(n) {
-    const m = this.memoe[`${n}`];
-    if (m !== undefined) {return m;}
-
-    let result = 0;
-    for (let i = 1; i <= n; i++) {
-      result += 1 / i;
+  getHarmonic(n) {
+    let result;
+    //if n is small, calculate directly, otherwise, use approximation
+    if (n < 60) {
+      result = 0;
+      for (let i = 1; i <= n; i++) {
+        result += 1 / i;
+      }
+    } else {
+      const gamma = 0.5772156649 //euler-mascheroni constant
+      result = (Math.log(n) + gamma);
     }
-    result *= n;
-    result =  Math.round(result);
-    this.memoe[`${n}`] = result;
     return result;
   }
 
-  getStdDev(n) {
-    const m = this.memos[`${n}`];
-    if (m !== undefined) {return m;}
+  getExpectedTries(n) {
+    return Math.round(this.getHarmonic(n) * n);
+  }
 
-    let variance = 0;
-    for (let i = 1; i < n; i++) {
-      variance += i / (n - i);
+  getExpectedRemainingTries(n, m) {
+    return Math.round(this.getHarmonic(n - m) * n);
+  }
+
+  getStdDev(n) {
+    let variance;
+    //if n is small, calculate directly, otherwise, use approximation
+    if (n < 60) {
+      variance = 0;
+      for (let i = 1; i < n; i++) {
+        variance += i / (n - i);
+      }
+    } else {
+      variance = n * this.getHarmonic(n - 1) - n + 1;
     }
-    const stddev = Math.sqrt(variance);
-    this.memos[`${n}`] = stddev;
-    return stddev;
+    return Math.sqrt(variance);
   }
 
   calcLuck(cell) {
@@ -294,7 +308,11 @@ class App {
         this.UI[`txt_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
-        this.UI[`luck_${row},${col}`].innerText = `${this.calcLuck(cell).toFixed(1)}`
+        if (cell.run === 1) {
+          this.UI[`luck_${row},${col}`].innerText = `${this.calcLuck(cell).toFixed(1)}`
+        } else {
+          this.UI[`luck_${row},${col}`].innerText = `${cell.lck.toFixed(1)}`
+        }
       }
     }
     
@@ -317,6 +335,7 @@ class App {
         this.state.totalLuck -= cell.lck;
         cell.lck = this.calcLuck(cell);
         this.state.totalLuck += cell.lck;
+        console.log('total luck', this.state.totalLuck);
         return false;
       }
 
