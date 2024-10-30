@@ -23,6 +23,8 @@ class App {
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
+    this.memoe = {}; //memoization storage for getExpectedTries
+    this.memos = {}; //memoization storage for getStdDev
     this.runningCells = [];
 
     this.initCells();
@@ -59,17 +61,47 @@ class App {
     return val;
   }
 
+  getExpectedTries(n) {
+    const m = this.memoe[`${n}`];
+    if (m !== undefined) {return m;}
+
+    let result = 0;
+    for (let i = 1; i <= n; i++) {
+      result += 1 / i;
+    }
+    result *= n;
+    result =  Math.round(result);
+    this.memoe[`${n}`] = result;
+    return result;
+  }
+
+  getStdDev(n) {
+    const m = this.memos[`${n}`];
+    if (m !== undefined) {return m;}
+
+    let variance = 0;
+    for (let i = 1; i < n; i++) {
+      variance += i / (n - i);
+    }
+    const stddev = Math.sqrt(variance);
+    this.memos[`${n}`] = stddev;
+    return stddev;
+  }
+
   initCells() {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         let cell;
         if (this.state.cells[`${row},${col}`] === undefined) {
+          const count = this.getBellNum(row, col);
           cell = {
-            cnt: this.getBellNum(row, col), //count
+            cnt: count, //count
             att: 0, //attempts
             fnd: 0, //found
-            cmp: 0, //complete,
-            run: 0  //running
+            cmp: 0, //complete
+            run: 0, //running
+            exp: this.getExpectedTries(count), //expected tries
+            std: this.getStdDev(count) //stddev of expected tries
           };
           this.state.cells[`${row},${col}`] = cell;
         } else {
@@ -183,9 +215,10 @@ class App {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         const cell = this.state.cells[`${row},${col}`]
-        this.UI[`txt_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd}`;
+        this.UI[`txt_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
+        this.UI[`luck_${row},${col}`].innerText = `${-((cell.att - cell.exp)/cell.std).toFixed(1)}`
       }
     }
     
