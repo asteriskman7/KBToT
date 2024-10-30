@@ -107,6 +107,48 @@ class App {
     return -(cell.att - cell.exp)/cell.std;
   }
 
+  calcExpTime(cell) {
+    const expectedRemainingTries = this.getExpectedRemainingTries(cell.cnt, cell.fnd);
+    const expectedRemainingTime = expectedRemainingTries * this.getTickPeriod();
+    return expectedRemainingTime;
+  }
+
+  timeToObj(t) {
+    const result = {};
+
+    result.y = Math.floor(t / (365 * 24 * 60 * 60));
+    t = t % (365 * 24 * 60 * 60);
+    result.d = Math.floor(t / (24 * 60 * 60));
+    t = t % (24 * 60 * 60);
+    result.h = Math.floor(t / (60 * 60));
+    t = t % (60 * 60);
+    result.m = Math.floor(t / 60);
+    t = t % 60;
+    result.s = t;
+
+    return result;
+  }  
+
+  remainingToStr(ms, full) {
+    if (ms === Infinity) {
+      return 'Infinity';
+    }
+
+    const timeObj = this.timeToObj(ms / 1000);
+
+    if (full) {
+      return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}:${timeObj.s.toFixed(1).padStart(4,0)}`;
+    }
+
+    if (timeObj.y > 0 || timeObj.d > 0 || timeObj.h > 0) {
+      return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}`;
+    } else {
+      //return `${timeObj.m.toString().padStart(2,0)}:${timeObj.s.toFixed(1).padStart(4,0)}`;
+      return `${timeObj.m.toString().padStart(2,0)}:${Math.ceil(timeObj.s).toString().padStart(2,0)}`;
+    }
+
+  }  
+
   initCells() {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
@@ -167,7 +209,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -188,7 +230,8 @@ class App {
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, 'cellProgress');
         const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
         const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', 'l=+5%');
-        const cellT = this.createElement(cellC, 'div', `txt_${row},${col}`, 'cellFG,cellTxt', '53/1321');
+        const cellI = this.createElement(cellC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '53/1321');
+        const cellT = this.createElement(cellC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '53/1321');
         cellC.onclick = () => this.clickCell(row, col);
 
         if (cellInfo.cnt % 2 === 0) {
@@ -205,7 +248,6 @@ class App {
 
     this.state = {
       savedTicks: 0,
-      tickPeriod: 1000, //ms
       cells: {},
       totalLuck: 0
     };
@@ -305,7 +347,7 @@ class App {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         const cell = this.state.cells[`${row},${col}`]
-        this.UI[`txt_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
+        this.UI[`info_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
         if (cell.run === 1) {
@@ -313,9 +355,12 @@ class App {
         } else {
           this.UI[`luck_${row},${col}`].innerText = `${cell.lck.toFixed(1)}`
         }
+        this.UI[`time_${row},${col}`].innerText = `${this.remainingToStr(this.calcExpTime(cell))}`;
       }
     }
     
+    const curTime = (new Date()).getTime();
+    this.UI.infoPlayTime.innerText = this.remainingToStr(curTime - this.state.gameStart, true);
 
     window.requestAnimationFrame(() => this.draw());
   }
@@ -343,12 +388,18 @@ class App {
     });
   }
 
+  getTickPeriod() {
+    return 100; //TODO: make a function of this.state.totalLuck
+  }
+
   tick() {
+    this.tickPeriod = this.getTickPeriod();
     let curTime = (new Date()).getTime();
     const sleepTime = curTime - this.state.lastTick;
-    let missingTicks = this.state.savedTicks + sleepTime / this.state.tickPeriod;
+    let missingTicks = this.state.savedTicks + sleepTime / this.tickPeriod;
     const stopTime = curTime + this.tickWorkTime;
     const maxTicksPerCycle = 100; //TODO: tune this value
+
 
     //try and process as many ticks as possible without taking too long
     while (missingTicks >= 1 && curTime < stopTime) {
