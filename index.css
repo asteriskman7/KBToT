@@ -11,7 +11,11 @@
 body {
   background-color: var(--bg);
   overflow-x: scroll;
-  font-family: 'Chivo Mono', monospace;
+  /*font-family: 'Chivo Mono', monospace;*/
+  font-family: "Azeret Mono", monospace;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
   font-size: 10pt;
   letter-spacing: -0.5pt;
 }
@@ -29,12 +33,23 @@ body {
   padding: 0.5em;
   box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
   right: 10px;
+  font-family: "Borel", Arial;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 24px;
+}
+
+.title {
+  font-size: large;
+  font-weight: bold;
+  margin-top: 5px;
 }
 
 #infoProgressContainer {
   width: 100%;
   height: 12px;
   background: white;
+  margin-bottom: 11px;
   box-shadow: inset 1px 1px 3px -1px black;
 }
 
@@ -42,6 +57,12 @@ body {
   width: 0%;
   height: 12px;
   background: var(--cell-progress);
+}
+
+#infoButtons {
+  display: grid;
+  grid-template-columns: 95px 95px 1fr;
+  grid-column-gap: 5px;
 }
 
 #cellsContainer {
@@ -71,6 +92,7 @@ body {
 }
 
 #att {
+  display: inline-block;
   text-align: right;
   font-size: xx-small;
   filter: opacity(0.2);

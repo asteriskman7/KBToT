@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono&display=swap" rel="stylesheet">
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,100..900;1,100..900&family=Borel&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">    
   </head>
   <body>
@@ -17,12 +18,16 @@
       <div>Next completion in: <span id='infoNext'></span></div>
       <div>Total time remaining: <span id='infoTimeRemaining'></span></div>
       <div id='infoProgressContainer'><div id='infoProgress'></div></div>
-      <div>There are no upgrades.<br>There is only Kristen Bell.</div>
+      <div>There are no upgrades.<br>There is only the luck you have gained from being in the same plane of existence as Kristen Bell.</div>
       <hr>
       <div>Discuss on <a href='https://discord.gg/pC9RY5B'>discord</a>.</div>
-      <div><button id='resetButton'>Reset Game</button><button id='imexShow'>Import/Export</button></div>
-      <div id='att'>&#128012; approved</div>
+      <div id='infoButtons'>
+        <button id='resetButton'>Reset Game</button>
+        <button id='imexShow'>Import/Export</button>
+        <div id='att'>&#128012; approved</div>
+      </div>
     </div>  
+    <div id='cellsContainer'></div>
     <dialog id='resetContainer'>
       Are you sure you want to reset?
       <div>
@@ -55,8 +60,6 @@
         <button id='imexClose' class='buttonUtil'>Close</button>
       </div>
     </dialog>    
-    <div id='cellsContainer'></div>
-    <div id='dtest'></div>
     <script src='index.js'></script>
   </body>
 </html>

@@ -2,15 +2,23 @@
 
 /*
   TODO:
-  make info box work
-  display total luck
+  display total luck / tick period
   make total luck change tick rate
-  add images
+  add images for cells
+  add favicon
   add end of game
   add correct mouse cursors
   confirm mobile support
   style modal dialogs
   style main game
+  provide some kind of help or info to explain mechanics
+  make legend for info in cell
+
+  the last cell is 27644437 and has expected trials of 489642435. need to determine how long I want it to take and
+    set up the tick interval 
+  make the last cell take 30 days
+  30 days = 30 * 24 * 60 * 60 = 2.592e6 seconds
+  max luck should give 188 ticks per second
 */
 
 class App {
@@ -134,7 +142,8 @@ class App {
     }
 
     //if (timeObj.y > 0 || timeObj.d > 0 || timeObj.h > 0) {
-      return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}`;
+      //return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}`;
+      return `${timeObj.y}:${timeObj.d.toString().padStart(3,0)}:${timeObj.h.toString().padStart(2,0)}:${timeObj.m.toString().padStart(2,0)}:${Math.ceil(timeObj.s).toString().padStart(2,0)}`;
     //} else {
       //return `${timeObj.m.toString().padStart(2,0)}:${timeObj.s.toFixed(1).padStart(4,0)}`;
     //  return `${timeObj.m.toString().padStart(2,0)}:${Math.ceil(timeObj.s).toString().padStart(2,0)}`;
@@ -220,7 +229,7 @@ class App {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
       for (let col = 1; col <= row; col++) {
         const cellInfo = this.state.cells[`${row},${col}`];
-        const cellC = this.createElement(rowE, 'div', '', 'cellTop');
+        const cellC = this.createElement(rowE, 'div', `cell_${row},${col}`, 'cellTop');
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, 'cellProgress');
         const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
         const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', 'l=+5%');
@@ -364,6 +373,8 @@ class App {
           this.UI[`time_${row},${col}`].innerText = '.'; //TODO: figure out why layout breaks if this is empty on a row where others aren't like when 203 cell is done but the rest of the row isn't
         }
 
+        this.UI[`cell_${row},${col}`].style.cursor = this.isCellClickable(row, col) ? 'default' : 'not-allowed';
+
         completeCount += cell.fnd;
       }
     }
@@ -403,7 +414,11 @@ class App {
   }
 
   getTickPeriod() {
-    return 100; //TODO: make a function of this.state.totalLuck
+    /*
+      f(0) = 1000;
+      f(?) = 
+    */
+    return 5.2937; //TODO: make a function of this.state.totalLuck
   }
 
   tick() {
