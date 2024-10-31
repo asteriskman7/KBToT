@@ -7,12 +7,12 @@
   add images for cells
   add favicon
   add end of game
-  add correct mouse cursors
   confirm mobile support
   style modal dialogs
   style main game
   provide some kind of help or info to explain mechanics
   make legend for info in cell
+  fix cell info display so that att and fnd and exp fit
 
   the last cell is 27644437 and has expected trials of 489642435. need to determine how long I want it to take and
     set up the tick interval 
@@ -89,7 +89,9 @@ class App {
     return Math.round(this.getHarmonic(n - m) * n);
   }
 
-  getStdDev(n) {
+  getStdDevOrig(n) {
+    //seemingly wrong
+    //https://files.eric.ed.gov/fulltext/EJ744035.pdf
     let variance;
     //if n is small, calculate directly, otherwise, use approximation
     if (n < 60) {
@@ -99,6 +101,23 @@ class App {
       }
     } else {
       variance = n * this.getHarmonic(n - 1) - n + 1;
+    }
+    return Math.sqrt(variance);
+  }
+
+  getStdDev(n) {
+    //https://brilliant.org/wiki/coupon-collector-problem/
+    let variance;
+    if (n < 60) {
+      variance = 0;
+      for (let i = 1; i <= n; i++) {
+        variance += 1 / (i * i);
+      }
+      variance *= n * n;
+      variance -= n * this.getHarmonic(n);
+    } else {
+      const gamma = 0.5772156649 //euler-mascheroni constant
+      variance = (Math.PI * Math.PI * n * n / 6) - n * (Math.log(n) + gamma) - 1/2;
     }
     return Math.sqrt(variance);
   }
@@ -196,9 +215,9 @@ class App {
 
     if (text !== undefined) {
       if (typeof text === 'string' && text.length > 0) {
-        e.innerText = text;
+        e.textContent = text;
       } else if (typeof text === 'number') {
-        e.innerText = text;
+        e.textContent = text;
       }
     }
 
@@ -352,13 +371,13 @@ class App {
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
         const cell = this.state.cells[`${row},${col}`]
-        this.UI[`info_${row},${col}`].innerText = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
+        this.UI[`info_${row},${col}`].textContent = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
         if (cell.run === 1) {
-          this.UI[`luck_${row},${col}`].innerText = `${this.calcLuck(cell).toFixed(1)}`
+          this.UI[`luck_${row},${col}`].textContent = `${this.calcLuck(cell).toFixed(1)}`
         } else {
-          this.UI[`luck_${row},${col}`].innerText = `${cell.lck.toFixed(1)}`
+          this.UI[`luck_${row},${col}`].textContent = `${cell.lck.toFixed(1)}`
         }
         if (cell.run === 1 || cell.cmp === 0) {
           const expTime = this.calcExpTime(cell);
@@ -368,9 +387,9 @@ class App {
           if (cell.run === 1) {
             minTimeRemaining = Math.min(minTimeRemaining, expTime);
           }
-          this.UI[`time_${row},${col}`].innerText = `${this.remainingToStr(expTime)}`;
+          this.UI[`time_${row},${col}`].textContent = `${this.remainingToStr(expTime)}`;
         } else {
-          this.UI[`time_${row},${col}`].innerText = '.'; //TODO: figure out why layout breaks if this is empty on a row where others aren't like when 203 cell is done but the rest of the row isn't
+          this.UI[`time_${row},${col}`].textContent = '.'; //TODO: figure out why layout breaks if this is empty on a row where others aren't like when 203 cell is done but the rest of the row isn't
         }
 
         this.UI[`cell_${row},${col}`].style.cursor = this.isCellClickable(row, col) ? 'default' : 'not-allowed';
@@ -380,9 +399,9 @@ class App {
     }
     
     const curTime = (new Date()).getTime();
-    this.UI.infoPlayTime.innerText = this.remainingToStr(curTime - this.state.gameStart, true);
-    this.UI.infoNext.innerText = this.remainingToStr(minTimeRemaining);
-    this.UI.infoTimeRemaining.innerText = this.remainingToStr(totalTimeRemaining);
+    this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
+    this.UI.infoNext.textContent = this.remainingToStr(minTimeRemaining);
+    this.UI.infoTimeRemaining.textContent = this.remainingToStr(totalTimeRemaining);
 
     
     const percent = 100 * completeCount / this.totalCount;
@@ -406,17 +425,17 @@ class App {
       if (cell.fnd >= cell.cnt) {
         cell.cmp = 1;
         cell.run = 0;
-        this.state.totalLuck -= cell.lck;
+        this.state.totalLuck -= cell.lck * cell.cnt;
         cell.lck = this.calcLuck(cell);
-        this.state.totalLuck += cell.lck;
+        this.state.totalLuck += cell.lck * cell.cnt;
       }
     });
   }
 
   getTickPeriod() {
     /*
-      f(0) = 1000;
-      f(?) = 
+      f(0) = 1000
+      f(max) = 5.2937
     */
     return 5.2937; //TODO: make a function of this.state.totalLuck
   }

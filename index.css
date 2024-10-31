@@ -16,7 +16,7 @@ body {
   font-optical-sizing: auto;
   font-weight: 200;
   font-style: normal;
-  font-size: 10pt;
+  font-size: 8pt;
   letter-spacing: -0.5pt;
 }
 
@@ -34,6 +34,7 @@ body {
   box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
   right: 10px;
   font-family: "Borel", Arial;
+  font-size: 10pt;
   font-weight: 400;
   font-style: normal;
   line-height: 24px;
