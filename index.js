@@ -29,7 +29,7 @@ class App {
     this.cellList = [];
     this.tickPeriod = 1000;
     this.minLuck = -1.2;
-    this.favicons = []; //[url to default, url to clickable]
+    this.favicons = ['./favicon.png', './faviconAlert.png'];
 
     this.initCells();
 
@@ -81,27 +81,13 @@ class App {
   }
 
   getExpectedTries(n) {
+    //https://brilliant.org/wiki/coupon-collector-problem/
     return Math.round(this.getHarmonic(n) * n);
   }
 
   getExpectedRemainingTries(n, m) {
+    //via help from Microsoft Copilot
     return Math.round(this.getHarmonic(n - m) * n);
-  }
-
-  getStdDevOrig(n) {
-    //seemingly wrong
-    //https://files.eric.ed.gov/fulltext/EJ744035.pdf
-    let variance;
-    //if n is small, calculate directly, otherwise, use approximation
-    if (n < 60) {
-      variance = 0;
-      for (let i = 1; i < n; i++) {
-        variance += i / (n - i);
-      }
-    } else {
-      variance = n * this.getHarmonic(n - 1) - n + 1;
-    }
-    return Math.sqrt(variance);
   }
 
   getStdDev(n) {
@@ -232,7 +218,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -249,8 +235,9 @@ class App {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
       for (let col = 1; col <= row; col++) {
         const cellInfo = this.state.cells[`${row},${col}`];
-        const cellC = this.createElement(rowE, 'div', `cell_${row},${col}`, 'cellTop');
-        const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, 'cellProgress');
+        const cellC = this.createElement(rowE, 'div', `cell_${row},${col}`, 'cellTop,cellEmpty');
+        const progressClasses = cellInfo.cnt % 2 === 0 ? 'cellProgress,cellProgressEven' : 'cellProgress,cellProgressOdd';
+        const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, progressClasses);
         const cellS = this.createElement(cellC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
         const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
         const cellE = this.createElement(cellC, 'div', `exp_${row},${col}`, 'cellFG,cellExp', '');
@@ -258,12 +245,6 @@ class App {
         const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', '');
         const cellT = this.createElement(cellC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '');
         cellC.onclick = () => this.clickCell(row, col);
-
-        if (cellInfo.cnt % 2 === 0) {
-          cellC.style.backgroundColor = 'white';
-        } else {
-          cellC.style.backgroundColor = 'blue';
-        }
       }
     }
   }
@@ -382,7 +363,14 @@ class App {
           minTimeRemaining = Math.min(minTimeRemaining, expTime);
         }
         const clickable = this.isCellClickable(row, col);
-        this.UI[`cell_${RC}`].style.cursor = clickable ? 'default' : 'not-allowed';
+        const cellE = this.UI[`cell_${RC}`];
+        if (clickable) {
+          cellE.style.cursor = 'default';
+          cellE.classList.add(cell.cnt % 2 === 0 ? 'cellEven' : 'cellOdd');
+        } else {
+          cellE.style.cursor = 'not-allowed';
+        }
+
         incompleteClickable = incompleteClickable || (cell.cmp === 0 && clickable);
 
         //only do remaining cell specific DOM actions if this cell has been updated
@@ -425,12 +413,10 @@ class App {
     const percent = 100 * completeCount / this.totalCount;
     this.UI.infoProgress.style.width = `${percent}%`;
 
-    /*
     const icon = this.favicons[+incompleteClickable];
     if (this.UI.linkIcon.href !== icon) {
       this.UI.linkIcon.href = icon;
     }
-    */
 
     document.title = `Kristen Bell's Triangle of Transcendence - ${minTimeRemainingStr}`;
 

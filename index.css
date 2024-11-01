@@ -1,6 +1,9 @@
 :root {
   --bg: hsl(192, 89%, 80%);
   --info-bg: hsl(192, 89%, 92%);
+  --cell-bg-even: #FFA6C3;
+  --cell-bg-odd: #9ACD8C;
+  --cell-bg-empty: hsl(0, 0%, 83%);
   --cell-progress: yellow;
 }
 
@@ -78,12 +81,32 @@ body {
   outline: 1px solid black;
 }
 
+.cellEmpty {
+  background-color: var(--cell-bg-empty);
+}
+
+.cellEven {
+  background-color: var(--cell-bg-even);
+}
+
+.cellOdd {
+  background-color: var(--cell-bg-odd);
+}
+
 .cellProgress {
   z-index: 0;
   position: absolute;
   height: 100%;
   width: 0%;
-  background-color: green;
+  outline: 1px dotted hsl(0, 0%, 50%);
+}
+
+.cellProgressEven {
+  background: url(./p0.png) center center / cover;
+}
+
+.cellProgressOdd {
+  background: url(./p1.png) center center / cover;
 }
 
 .cellFG {
