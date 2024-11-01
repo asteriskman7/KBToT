@@ -2,23 +2,19 @@
 
 /*
   TODO:
-  display total luck / tick period
-  make total luck change tick rate
   add images for cells
   add favicon
+  favicon should change when there is an uncompleted item available to click
   add end of game
   confirm mobile support
   style modal dialogs
   style main game
-  provide some kind of help or info to explain mechanics
-  make legend for info in cell
-  fix cell info display so that att and fnd and exp fit
+  provide some kind of help or info to explain mechanics, show at start and via help button
+    make legend for info in cell
+  always use textContent instead of innerText
+  update the coupon collector page with the new equations/estimates here
+  animate flying butterflies or something?
 
-  the last cell is 27644437 and has expected trials of 489642435. need to determine how long I want it to take and
-    set up the tick interval 
-  make the last cell take 30 days
-  30 days = 30 * 24 * 60 * 60 = 2.592e6 seconds
-  max luck should give 188 ticks per second
 */
 
 class App {
@@ -31,6 +27,9 @@ class App {
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
     this.cellList = [];
+    this.tickPeriod = 1000;
+    this.minLuck = -1.2;
+    this.favicons = []; //[url to default, url to clickable]
 
     this.initCells();
 
@@ -127,8 +126,8 @@ class App {
     return -(cell.att - cell.exp)/cell.std;
   }
 
-  calcExpTime(cell) {
-    const expectedRemainingTries = this.getExpectedRemainingTries(cell.cnt, cell.fnd);
+  calcExpTime(cell, restart) {
+    const expectedRemainingTries = this.getExpectedRemainingTries(cell.cnt, restart ? 0 : cell.fnd);
     const expectedRemainingTime = expectedRemainingTries * this.getTickPeriod();
     return expectedRemainingTime;
   }
@@ -185,7 +184,8 @@ class App {
             run: 0, //running
             exp: this.getExpectedTries(count), //expected tries
             std: this.getStdDev(count), //stddev of expected tries
-            lck: 0
+            lck: 0, //luck
+            upd: 1  //updated
           };
           this.state.cells[`${row},${col}`] = cell;
         } else {
@@ -193,6 +193,7 @@ class App {
         }
 
         this.totalCount += cell.cnt;
+        cell.upd = 1;
 
         this.cellList.push(cell);
       }
@@ -231,7 +232,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -250,10 +251,12 @@ class App {
         const cellInfo = this.state.cells[`${row},${col}`];
         const cellC = this.createElement(rowE, 'div', `cell_${row},${col}`, 'cellTop');
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, 'cellProgress');
+        const cellS = this.createElement(cellC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
         const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
-        const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', 'l=+5%');
-        const cellI = this.createElement(cellC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '53/1321');
-        const cellT = this.createElement(cellC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '53/1321');
+        const cellE = this.createElement(cellC, 'div', `exp_${row},${col}`, 'cellFG,cellExp', '');
+        const cellI = this.createElement(cellC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '');
+        const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', '');
+        const cellT = this.createElement(cellC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '');
         cellC.onclick = () => this.clickCell(row, col);
 
         if (cellInfo.cnt % 2 === 0) {
@@ -364,49 +367,72 @@ class App {
   }
 
   draw() {
-    //TODO: don't redraw things that aren't changing
     let minTimeRemaining = Infinity;
     let totalTimeRemaining = 0;
     let completeCount = 0;
+    let incompleteClickable = false;
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
-        const cell = this.state.cells[`${row},${col}`]
-        this.UI[`info_${row},${col}`].textContent = `${cell.att} -> ${cell.fnd} (${cell.exp})`;
+        const RC = `${row},${col}`;
+        const cell = this.state.cells[RC]
+        completeCount += cell.cmp === 1 ? cell.cnt : cell.fnd;
+        const expTime = cell.run === 1 ? this.calcExpTime(cell) : this.calcExpTime(cell, true);
+        totalTimeRemaining += cell.cmp === 0 ? expTime : 0;
+        if (cell.run === 1 && cell.cmp === 0) {
+          minTimeRemaining = Math.min(minTimeRemaining, expTime);
+        }
+        const clickable = this.isCellClickable(row, col);
+        this.UI[`cell_${RC}`].style.cursor = clickable ? 'default' : 'not-allowed';
+        incompleteClickable = incompleteClickable || (cell.cmp === 0 && clickable);
+
+        //only do remaining cell specific DOM actions if this cell has been updated
+        if (cell.upd === 0) {continue;}
+        cell.upd = 0;
+
+        this.UI[`info_${RC}`].textContent = `${cell.att} : ${cell.cnt - cell.fnd}`;
+        this.UI[`exp_${RC}`].textContent = cell.exp.toFixed(0);
         const percent = 100 * cell.fnd / cell.cnt;
-        this.UI[`progress_${row},${col}`].style.width = `${percent}%`;
+        this.UI[`progress_${RC}`].style.width = `${percent}%`;
+
+        let baseLuck;
         if (cell.run === 1) {
-          this.UI[`luck_${row},${col}`].textContent = `${this.calcLuck(cell).toFixed(1)}`
+          baseLuck = this.calcLuck(cell);
         } else {
-          this.UI[`luck_${row},${col}`].textContent = `${cell.lck.toFixed(1)}`
-        }
-        if (cell.run === 1 || cell.cmp === 0) {
-          const expTime = this.calcExpTime(cell);
-          if (cell.cmp === 0) {
-            totalTimeRemaining += expTime;
-          }
-          if (cell.run === 1) {
-            minTimeRemaining = Math.min(minTimeRemaining, expTime);
-          }
-          this.UI[`time_${row},${col}`].textContent = `${this.remainingToStr(expTime)}`;
-        } else {
-          this.UI[`time_${row},${col}`].textContent = '.'; //TODO: figure out why layout breaks if this is empty on a row where others aren't like when 203 cell is done but the rest of the row isn't
+          baseLuck = cell.lck;
         }
 
-        this.UI[`cell_${row},${col}`].style.cursor = this.isCellClickable(row, col) ? 'default' : 'not-allowed';
+        if (baseLuck < this.minLuck) {
+          this.UI[`luck_${RC}`].textContent = `${this.minLuck.toFixed(1)} (${baseLuck.toFixed(1)})`;
+        } else {
+          this.UI[`luck_${RC}`].textContent = `${baseLuck.toFixed(1)}`
+        }
 
-        completeCount += cell.fnd;
+        this.UI[`symbol_${RC}`].style.display = baseLuck < 0 ? 'block' : 'none';
+          
+        this.UI[`time_${RC}`].textContent = `${this.remainingToStr(expTime)}`;
+
       }
     }
     
     const curTime = (new Date()).getTime();
     this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
-    this.UI.infoNext.textContent = this.remainingToStr(minTimeRemaining);
+    const minTimeRemainingStr = this.remainingToStr(minTimeRemaining);
+    this.UI.infoNext.textContent = minTimeRemainingStr;
     this.UI.infoTimeRemaining.textContent = this.remainingToStr(totalTimeRemaining);
+    this.UI.infoLuckTick.textContent = `${this.state.totalLuck.toFixed(1)} / ${this.tickPeriod.toFixed(3)} ms`;
 
     
     const percent = 100 * completeCount / this.totalCount;
-    //this.UI.infoProgress.style.width = `${(curTime % 10000) * 100 / 10000}%`;
     this.UI.infoProgress.style.width = `${percent}%`;
+
+    /*
+    const icon = this.favicons[+incompleteClickable];
+    if (this.UI.linkIcon.href !== icon) {
+      this.UI.linkIcon.href = icon;
+    }
+    */
+
+    document.title = `Kristen Bell's Triangle of Transcendence - ${minTimeRemainingStr}`;
 
     window.requestAnimationFrame(() => this.draw());
   }
@@ -415,6 +441,7 @@ class App {
     this.cellList.forEach( cell => {
       if (cell.run === 0) {return;}
 
+      cell.upd = 1;
       const rndVal = Math.random();
       const thresh = (cell.cnt - cell.fnd) / cell.cnt;
       cell.att += 1;
@@ -426,7 +453,7 @@ class App {
         cell.cmp = 1;
         cell.run = 0;
         this.state.totalLuck -= cell.lck * cell.cnt;
-        cell.lck = this.calcLuck(cell);
+        cell.lck = Math.max(this.minLuck, this.calcLuck(cell));
         this.state.totalLuck += cell.lck * cell.cnt;
       }
     });
@@ -436,8 +463,21 @@ class App {
     /*
       f(0) = 1000
       f(max) = 5.2937
+      the function is linear with respect to the luckPow power of total luck
     */
-    return 5.2937; //TODO: make a function of this.state.totalLuck
+    
+    const basePeriod = 1000;
+    const minPeriod = 5.2937; //targets 30 days for final cell 
+    const totalCountPre = 163254884; //total count including everything but the last cell
+    const targetLuck = 0.75; //equation calibrated for this luck value on all completed cells
+    const maxLuck = totalCountPre * targetLuck;
+    const baseLuck = 0;
+    const slope = (minPeriod - basePeriod) / (maxLuck - baseLuck);
+    const luckPow = 0.1;
+    const invPowMaxLuck = Math.pow(maxLuck, 1 - luckPow);
+    const boundTotalLuck = Math.max(0, this.state.totalLuck);
+    const calcPeriod = basePeriod + slope * Math.pow(boundTotalLuck, luckPow) * invPowMaxLuck; 
+    return Math.max(1, calcPeriod);
   }
 
   tick() {
@@ -493,11 +533,9 @@ class App {
     const depCol = col === 1 ? row - 1 : col - 1;
     const depCellInfo = this.state.cells[`${depRow},${depCol}`];
     return depCellInfo.cmp === 1;
-
   }
 
   clickCell(row, col) {
-    console.log('click', row, col);
     if (this.isCellClickable(row, col)) {
       const cellInfo = this.state.cells[`${row},${col}`];
       this.startCell(cellInfo);
