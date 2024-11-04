@@ -2,12 +2,11 @@
 
 /*
   TODO:
-  add end of game
   confirm mobile support
-  style modal dialogs
-  style main game
   always use textContent instead of innerText
   animate flying butterflies or something?
+  verify that the final cell can actually complete
+  verify that completing the final cell shows the win screen
 
 */
 
@@ -18,6 +17,8 @@ class App {
     this.storageKey = 'KBToT';
     this.firstLoad = false;
     this.loadFromStorage();
+    this.enableConfetti = false;
+    this.confettiPieces = [];
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
@@ -218,7 +219,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -232,6 +233,10 @@ class App {
     this.UI.imexExport.onclick = () => this.export();
     this.UI.helpButton.onclick = () => this.showModal('helpContainer');
     this.UI.helpClose.onclick = () => this.closeModal('helpContainer');
+    this.UI.winClose.onclick = () => {
+      this.enableConfetti = false;
+      this.closeModal('winContainer');
+    };
 
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
@@ -425,6 +430,15 @@ class App {
       }
     }
 
+    if (this.state.cells[`${this.rows},${this.rows}`].cmp === 1 && this.state.endTime === undefined) {
+      this.state.endTime = (new Date()).getTime();
+      const playTime = this.state.endTime - this.state.gameStart;
+      this.UI.winPlayTime.innerText = this.remainingToStr(playTime, true);
+      this.showModal('winContainer');
+      this.enableConfetti = true;
+      this.saveToStorage();
+    }
+
     this.updateForLuck = false;
     
     const curTime = (new Date()).getTime();
@@ -500,6 +514,17 @@ class App {
     const stopTime = curTime + this.tickWorkTime;
     const maxTicksPerCycle = 100; //TODO: tune this value
 
+    if (this.enableConfetti) {
+      const rect = this.UI.winContainer.getBoundingClientRect();
+      const xl = rect.left + window.scrollX;
+      const xr = rect.right + window.scrollX;
+      const yt = rect.top + window.scrollY;
+      const yb = rect.bottom + window.scrollY;
+      this.createConfetti(xl, yt); 
+      this.createConfetti(xl, yb); 
+      this.createConfetti(xr, yt); 
+      this.createConfetti(xr, yb); 
+    }
 
     //try and process as many ticks as possible without taking too long
     while (missingTicks >= 1 && curTime < stopTime) {
@@ -552,6 +577,38 @@ class App {
       const cellInfo = this.state.cells[`${row},${col}`];
       this.startCell(cellInfo);
     }
+  }
+
+  createConfetti(x, y) {
+    const confetti = document.createElement('div');
+    confetti.classList.add('confetti');
+    this.UI.winContainer.appendChild(confetti);
+
+    const angle = 2 * Math.PI * Math.random();
+    const distance = 100;
+    const dx = distance * Math.cos(angle);
+    const dy = distance * Math.sin(angle);
+    const h = Math.random() * 360;
+    confetti.style.backgroundColor = `hsl(${h}, 100%, 50%)`;
+
+    const animation = confetti.animate([
+      {
+        transform: `translate(${x}px, ${y}px)`,
+        opacity: 1
+      },
+      {
+        transform: `translate(${x + dx}px, ${y + dy}px)`,
+        opacity: 0
+      }
+    ], {
+      duration: 1000 + Math.random() * 1000,
+      easing: 'cubic-bezier(0, .9, .57, 1)',
+      delay: Math.random() * 200
+    });
+
+    animation.onfinish = () => {
+      confetti.remove();
+    };
   }
 }
 
