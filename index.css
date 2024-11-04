@@ -104,6 +104,23 @@ dialog {
   width: 140px;
   height: 68px;
   outline: 1px solid black;
+  box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
+}
+
+.cellRowEnd {
+  border-radius: 0px 10px 0px 0px;
+}
+
+.cellRowTop {
+  border-radius: 10px 10px 0px 0px;
+}
+
+.cellRowBotStart {
+  border-radius: 0px 0px 0px 10px;
+}
+
+.cellRowBotEnd {
+  border-radius: 0px 10px 10px 0px;
 }
 
 .cellEmpty {

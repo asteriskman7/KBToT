@@ -6,8 +6,6 @@
   confirm mobile support
   style modal dialogs
   style main game
-  provide some kind of help or info to explain mechanics, show at start and via help button
-    make legend for info in cell
   always use textContent instead of innerText
   animate flying butterflies or something?
 
@@ -243,15 +241,35 @@ class App {
         if (cellInfo.run === 1) {
           cellC.classList.add(cellInfo.cnt % 2 === 0 ? 'cellEven' : 'cellOdd');
         }
+        if (col === row) {
+          cellC.classList.add('cellRowEnd');
+        }
+        if (row === 1) {
+          cellC.classList.add('cellRowTop');
+        }
+        if (row === this.rows) {
+          if (col === 1) {
+            cellC.classList.add('cellRowBotStart');
+          }
+          if (col === row) {
+            cellC.classList.add('cellRowBotEnd');
+          }
+        }
         const progressClasses = cellInfo.cnt % 2 === 0 ? 'cellProgress,cellProgressEven' : 'cellProgress,cellProgressOdd';
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, progressClasses);
         const cellFGC = this.createElement(cellC, 'div', '', 'cellFGContainer');
         const cellS = this.createElement(cellFGC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
         const cellN = this.createElement(cellFGC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
+        if (row === 1) {
+          cellN.style.borderRadius = '7px 0px 0px 0px';
+        }
         const cellE = this.createElement(cellFGC, 'div', `exp_${row},${col}`, 'cellFG,cellExp', '');
         const cellI = this.createElement(cellFGC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '');
         const cellL = this.createElement(cellFGC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', '');
         const cellT = this.createElement(cellFGC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '');
+        if (row === this.rows && col === 1) {
+          cellT.style.borderRadius = '0px 0px 0px 7px';
+        }
         cellC.onclick = () => this.clickCell(row, col);
       }
     }
