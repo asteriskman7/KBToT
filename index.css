@@ -14,17 +14,41 @@
 body {
   background-color: var(--bg);
   overflow-x: scroll;
-  /*font-family: 'Chivo Mono', monospace;*/
   font-family: "Azeret Mono", monospace;
   font-optical-sizing: auto;
   font-weight: 200;
   font-style: normal;
-  font-size: 8pt;
+  font-size: 11px;
   letter-spacing: -0.5pt;
 }
 
 .blur2px {
   filter: blur(2px);
+}
+
+dialog {
+  border-radius: 10px;
+  box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
+}
+
+#helpWelcome {
+  font-family: "Borel", Arial;
+  font-size: 10pt;
+}
+
+#helpTop {
+  display: grid;
+  grid-template-columns: 1fr 100px;
+}
+
+#helpTitle {
+  display: inline;
+  font-weight: bold;
+  font-size: 12pt;
+}
+
+#imgHelp {
+  width: 100px;
 }
 
 #infoBox {
@@ -35,6 +59,7 @@ body {
   outline: 1px solid black;
   padding: 0.5em;
   box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
+  border-radius: 10px;
   right: 10px;
   font-family: "Borel", Arial;
   font-size: 10pt;
@@ -65,7 +90,7 @@ body {
 
 #infoButtons {
   display: grid;
-  grid-template-columns: 95px 95px 1fr;
+  grid-template-columns: 95px 95px 95px 1fr;
   grid-column-gap: 5px;
 }
 
@@ -98,7 +123,6 @@ body {
   position: absolute;
   height: 100%;
   width: 0%;
-  outline: 1px dotted hsl(0, 0%, 50%);
 }
 
 .cellProgressEven {
@@ -109,10 +133,19 @@ body {
   background: url(./p1.png) center center / cover;
 }
 
+.cellFGContainer {
+  display: grid;
+  padding-top: 2px;
+}
+
 .cellFG {
   z-index: 30;
   position: relative;
   padding-left: 2px;
+  padding-right: 3px;
+  display: inline;
+  background-color: #FFFFFFB8;
+  justify-self: start;
 }
 
 .cellSymbol {

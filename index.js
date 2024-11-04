@@ -2,9 +2,6 @@
 
 /*
   TODO:
-  add images for cells
-  add favicon
-  favicon should change when there is an uncompleted item available to click
   add end of game
   confirm mobile support
   style modal dialogs
@@ -12,7 +9,6 @@
   provide some kind of help or info to explain mechanics, show at start and via help button
     make legend for info in cell
   always use textContent instead of innerText
-  update the coupon collector page with the new equations/estimates here
   animate flying butterflies or something?
 
 */
@@ -22,6 +18,7 @@ class App {
     this.disableSaves = false;
 
     this.storageKey = 'KBToT';
+    this.firstLoad = false;
     this.loadFromStorage();
 
     this.rows = 13;
@@ -30,6 +27,7 @@ class App {
     this.tickPeriod = 1000;
     this.minLuck = -1.2;
     this.favicons = ['./favicon.png', './faviconAlert.png'];
+    this.updateForLuck = true;
 
     this.initCells();
 
@@ -44,6 +42,10 @@ class App {
 
     setInterval(() => this.tick(), tickInterval);
     setInterval(() => this.saveToStorage(), 5000);
+
+    if (this.firstLoad) {
+      this.showModal('helpContainer');
+    }
   }
 
   //get the number in the bell triangle at row n and column k
@@ -218,7 +220,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -230,20 +232,26 @@ class App {
     this.UI.imexClose.onclick = () => this.closeModal('imexContainer');
     this.UI.imexImport.onclick = () => this.import();
     this.UI.imexExport.onclick = () => this.export();
+    this.UI.helpButton.onclick = () => this.showModal('helpContainer');
+    this.UI.helpClose.onclick = () => this.closeModal('helpContainer');
 
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
       for (let col = 1; col <= row; col++) {
         const cellInfo = this.state.cells[`${row},${col}`];
         const cellC = this.createElement(rowE, 'div', `cell_${row},${col}`, 'cellTop,cellEmpty');
+        if (cellInfo.run === 1) {
+          cellC.classList.add(cellInfo.cnt % 2 === 0 ? 'cellEven' : 'cellOdd');
+        }
         const progressClasses = cellInfo.cnt % 2 === 0 ? 'cellProgress,cellProgressEven' : 'cellProgress,cellProgressOdd';
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, progressClasses);
-        const cellS = this.createElement(cellC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
-        const cellN = this.createElement(cellC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
-        const cellE = this.createElement(cellC, 'div', `exp_${row},${col}`, 'cellFG,cellExp', '');
-        const cellI = this.createElement(cellC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '');
-        const cellL = this.createElement(cellC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', '');
-        const cellT = this.createElement(cellC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '');
+        const cellFGC = this.createElement(cellC, 'div', '', 'cellFGContainer');
+        const cellS = this.createElement(cellFGC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
+        const cellN = this.createElement(cellFGC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
+        const cellE = this.createElement(cellFGC, 'div', `exp_${row},${col}`, 'cellFG,cellExp', '');
+        const cellI = this.createElement(cellFGC, 'div', `info_${row},${col}`, 'cellFG,cellInfo', '');
+        const cellL = this.createElement(cellFGC, 'div', `luck_${row},${col}`, 'cellFG,cellLuck', '');
+        const cellT = this.createElement(cellFGC, 'div', `time_${row},${col}`, 'cellFG,cellTime', '');
         cellC.onclick = () => this.clickCell(row, col);
       }
     }
@@ -264,6 +272,7 @@ class App {
     } else {
       this.state.gameStart = (new Date()).getTime();
       this.state.lastTick = this.state.gameStart;
+      this.firstLoad = true;
     }
 
     this.saveToStorage();
@@ -374,7 +383,7 @@ class App {
         incompleteClickable = incompleteClickable || (cell.cmp === 0 && clickable);
 
         //only do remaining cell specific DOM actions if this cell has been updated
-        if (cell.upd === 0) {continue;}
+        if (cell.upd === 0 && !this.updateForLuck) {continue;}
         cell.upd = 0;
 
         this.UI[`info_${RC}`].textContent = `${cell.att} : ${cell.cnt - cell.fnd}`;
@@ -383,11 +392,7 @@ class App {
         this.UI[`progress_${RC}`].style.width = `${percent}%`;
 
         let baseLuck;
-        if (cell.run === 1) {
-          baseLuck = this.calcLuck(cell);
-        } else {
-          baseLuck = cell.lck;
-        }
+        baseLuck = this.calcLuck(cell);
 
         if (baseLuck < this.minLuck) {
           this.UI[`luck_${RC}`].textContent = `${this.minLuck.toFixed(1)} (${baseLuck.toFixed(1)})`;
@@ -401,6 +406,8 @@ class App {
 
       }
     }
+
+    this.updateForLuck = false;
     
     const curTime = (new Date()).getTime();
     this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
@@ -441,6 +448,7 @@ class App {
         this.state.totalLuck -= cell.lck * cell.cnt;
         cell.lck = Math.max(this.minLuck, this.calcLuck(cell));
         this.state.totalLuck += cell.lck * cell.cnt;
+        this.updateForLuck = true;
       }
     });
   }
@@ -459,7 +467,7 @@ class App {
     const maxLuck = totalCountPre * targetLuck;
     const baseLuck = 0;
     const slope = (minPeriod - basePeriod) / (maxLuck - baseLuck);
-    const luckPow = 0.1;
+    const luckPow = 0.05385; //with this value, the total run time, if everything is at luck of 0.75 is 5 years
     const invPowMaxLuck = Math.pow(maxLuck, 1 - luckPow);
     const boundTotalLuck = Math.max(0, this.state.totalLuck);
     const calcPeriod = basePeriod + slope * Math.pow(boundTotalLuck, luckPow) * invPowMaxLuck; 

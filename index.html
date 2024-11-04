@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Kristen Bell's Triangle of Transcendence</title>
-    <!-- <link rel="icon" href="favicon.png" id="linkIcon"> -->
+    <link rel="icon" href="favicon.png" id="linkIcon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,10 +25,52 @@
       <div id='infoButtons'>
         <button id='resetButton'>Reset Game</button>
         <button id='imexShow'>Import/Export</button>
+        <button id='helpButton'>Help</button>
         <div id='att'>&#128012; approved</div>
       </div>
     </div>  
     <div id='cellsContainer'></div>
+    <dialog id='helpContainer'>
+      <div id='helpTop'>
+        <div>
+          <div id='helpWelcome'>
+            Hey there! Kristen Bell here. Welcome to <div id='helpTitle'>Kristen Bell's Triangle of Transcendence!</div>
+            <div>Feel free to review the info below or just jump straight in. You're gonna have a blast!</div>
+          </div>
+          <div>
+            You can review this help later by clicking the Help button in the info box.
+          </div>
+          <div>
+            <ul>
+              <li>Each cell has a value, N, based on the <a href='https://en.wikipedia.org/wiki/Bell_triangle'>Bell Triangle</a>.</li>
+              <li>All previous cells must be complete at least once before a cell can be activated.</li>
+              <li>When active, a cell randomly generates values in [1,N] (with replacement) until it has found them all.</li>
+              <li>When a cell is complete, you gain luck based on how many attempts it took you (multiplied by N).</li>
+              <li>To avoid a potentially devistating result, negative luck is capped at -1.2</li>
+              <li>The rate at which values are generated is based on the total luck you have gained.</li>
+              <li>Once complete, you can re-run a cell to try and improve your luck but you may end up with a worse result.</li>
+              <li>The game saves every 5 seconds.</li>
+              <li>Extra cycles are run to catch up offline time, though long away times may never fully catch up.</li>
+              <li>Complete all cells to win the game!</li>
+            </ul>
+          </div>
+          <div>
+            Each cell has 5 lines of information:
+            <ol>
+              <li>Cell value (and - symbol if luck is less than 0)</li>
+              <li>Expected number of tries</li>
+              <li>Tries so far : values remaining</li>
+              <li>Luck (standard deviations from expected number of tries)</li>
+              <li>Estimated time remaining</li>
+            </ol>
+          </div>
+        </div>
+        <div>
+          <img id='imgHelp' src='./help.png'>
+        </div>
+      </div>
+      <button id='helpClose'>Close</button>
+    </dialog>
     <dialog id='resetContainer'>
       Are you sure you want to reset?
       <div>
