@@ -189,7 +189,7 @@ dialog {
 }
 
 #winImg {
-  width: 450px;
+  height: 400px;
 }
 
 .confetti {
@@ -201,4 +201,7 @@ dialog {
   width: 7px;
   height: 7px;
   background-color: red;
+  border-radius: 7px;
+  outline: 1px solid hsl(0, 0%, 50%);
+  box-shadow: 6px 6px 5px hsla(0, 0%, 0%, 0.5);
 }

@@ -3,22 +3,17 @@
 /*
   TODO:
   confirm mobile support
-  always use textContent instead of innerText
-  animate flying butterflies or something?
-  verify that the final cell can actually complete
-  verify that completing the final cell shows the win screen
 
 */
 
 class App {
   constructor() {
     this.disableSaves = false;
-
+ 
     this.storageKey = 'KBToT';
     this.firstLoad = false;
     this.loadFromStorage();
     this.enableConfetti = false;
-    this.confettiPieces = [];
 
     this.rows = 13;
     this.memobn = {'1,1': 1}; //memoization storage for getBellNum
@@ -219,7 +214,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -430,10 +425,11 @@ class App {
       }
     }
 
+    //TODO: remove forceWin
     if (this.state.cells[`${this.rows},${this.rows}`].cmp === 1 && this.state.endTime === undefined) {
       this.state.endTime = (new Date()).getTime();
       const playTime = this.state.endTime - this.state.gameStart;
-      this.UI.winPlayTime.innerText = this.remainingToStr(playTime, true);
+      this.UI.winPlayTime.textContent = this.remainingToStr(playTime, true);
       this.showModal('winContainer');
       this.enableConfetti = true;
       this.saveToStorage();
@@ -442,11 +438,15 @@ class App {
     this.updateForLuck = false;
     
     const curTime = (new Date()).getTime();
-    this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
+    if (this.state.endTime === undefined) {
+      this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
+    } else {
+      this.UI.infoPlayTime.textContent = this.remainingToStr(this.state.endTime - this.state.gameStart, true);
+    }
     const minTimeRemainingStr = this.remainingToStr(minTimeRemaining);
     this.UI.infoNext.textContent = minTimeRemainingStr;
     this.UI.infoTimeRemaining.textContent = this.remainingToStr(totalTimeRemaining);
-    this.UI.infoLuckTick.textContent = `${this.state.totalLuck.toFixed(1)} / ${this.tickPeriod.toFixed(3)} ms`;
+    this.UI.infoLuckTick.textContent = `${this.state.totalLuck.toFixed(1)} / ${this.tickPeriod.toFixed(3)} ms${this.state.savedTicks > 10 ? ' +' : ''}`;
 
     
     const percent = 100 * completeCount / this.totalCount;
@@ -512,18 +512,36 @@ class App {
     const sleepTime = curTime - this.state.lastTick;
     let missingTicks = this.state.savedTicks + sleepTime / this.tickPeriod;
     const stopTime = curTime + this.tickWorkTime;
-    const maxTicksPerCycle = 100; //TODO: tune this value
+    const maxTicksPerCycle = 10000;
 
     if (this.enableConfetti) {
       const rect = this.UI.winContainer.getBoundingClientRect();
-      const xl = rect.left + window.scrollX;
-      const xr = rect.right + window.scrollX;
-      const yt = rect.top + window.scrollY;
-      const yb = rect.bottom + window.scrollY;
-      this.createConfetti(xl, yt); 
-      this.createConfetti(xl, yb); 
-      this.createConfetti(xr, yt); 
-      this.createConfetti(xr, yb); 
+      const xl = rect.left;
+      const xr = rect.right;
+      const yt = rect.top;
+      const yb = rect.bottom;
+      const confettiCount = 10;
+      const confettiChance = 0.1;
+      if (Math.random() < confettiChance) {
+        for (let i = 0; i < confettiCount; i++) {
+          this.createConfetti(xl, yt); 
+        }
+      }
+      if (Math.random() < confettiChance) {
+        for (let i = 0; i < confettiCount; i++) {
+          this.createConfetti(xl, yb); 
+        }
+      }
+      if (Math.random() < confettiChance) {
+        for (let i = 0; i < confettiCount; i++) {
+          this.createConfetti(xr, yt); 
+        }
+      }
+      if (Math.random() < confettiChance) {
+        for (let i = 0; i < confettiCount; i++) {
+          this.createConfetti(xr, yb); 
+        }
+      }
     }
 
     //try and process as many ticks as possible without taking too long
@@ -585,11 +603,12 @@ class App {
     this.UI.winContainer.appendChild(confetti);
 
     const angle = 2 * Math.PI * Math.random();
-    const distance = 100;
+    const distance = 150;
     const dx = distance * Math.cos(angle);
     const dy = distance * Math.sin(angle);
     const h = Math.random() * 360;
     confetti.style.backgroundColor = `hsl(${h}, 100%, 50%)`;
+    confetti.style.backgroundColor = Math.random() < 0.5 ? 'var(--cell-bg-even)' : 'var(--cell-bg-odd)';
 
     const animation = confetti.animate([
       {
@@ -602,7 +621,7 @@ class App {
       }
     ], {
       duration: 1000 + Math.random() * 1000,
-      easing: 'cubic-bezier(0, .9, .57, 1)',
+      easing: 'cubic-bezier(0.34, .79, .32, .99)',
       delay: Math.random() * 200
     });
 
