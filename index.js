@@ -404,8 +404,12 @@ class App {
         if (cell.upd === 0 && !this.updateForLuck) {continue;}
         cell.upd = 0;
 
-        this.UI[`info_${RC}`].textContent = `${cell.att} : ${cell.cnt - cell.fnd}`;
-        this.UI[`exp_${RC}`].textContent = cell.exp.toFixed(0);
+        const expectedValueStr = cell.exp.toFixed(0);
+        const attStr = cell.att.toFixed(0);
+        //\u00A0 turns into nbsp without needing to use innerText instead of textContent
+        const attStrPadding = '\u00A0'.repeat(Math.max(0, expectedValueStr.length - attStr.length));
+        this.UI[`exp_${RC}`].textContent = expectedValueStr;
+        this.UI[`info_${RC}`].textContent = `${attStrPadding}${attStr} : ${cell.cnt - cell.fnd}`;
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${RC}`].style.width = `${percent}%`;
 
