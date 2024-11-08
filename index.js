@@ -21,7 +21,7 @@ class App {
     this.tickPeriod = 1000;
     this.minLuck = -1.2;
     this.favicons = ['./favicon.png', './faviconAlert.png'];
-    this.updateForLuck = true;
+    this.forceRedraw = true;
 
     this.initCells();
 
@@ -214,7 +214,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime,infoThreshSlider,infoThreshDisp'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -232,6 +232,9 @@ class App {
       this.enableConfetti = false;
       this.closeModal('winContainer');
     };
+    this.UI.infoThreshSlider.oninput = () => this.threshSliderChange();
+    this.UI.infoThreshSlider.value = this.state.threshold;
+    this.threshSliderChange();
 
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
@@ -259,6 +262,7 @@ class App {
         const cellP = this.createElement(cellC, 'div', `progress_${row},${col}`, progressClasses);
         const cellFGC = this.createElement(cellC, 'div', '', 'cellFGContainer');
         const cellS = this.createElement(cellFGC, 'div', `symbol_${row},${col}`, 'cellFG,cellSymbol', '');
+        const cellR = this.createElement(cellFGC, 'div', `run_${row},${col}`, 'cellFG,cellRun', '');
         const cellN = this.createElement(cellFGC, 'div', `num_${row},${col}`, 'cellFG,bellNum', cellInfo.cnt);
         if (row === 1) {
           cellN.style.borderRadius = '7px 0px 0px 0px';
@@ -271,6 +275,22 @@ class App {
           cellT.style.borderRadius = '0px 0px 0px 7px';
         }
         cellC.onclick = () => this.clickCell(row, col);
+
+        const animation = cellR.animate([
+            { transform: 'rotate(0deg)' },
+            { transform: 'rotate(90deg)' },
+            { transform: 'rotate(180deg)' },
+            { transform: 'rotate(270deg)' },
+            { transform: 'rotate(360deg)' },
+          ], 
+          {
+            duration: 3000,
+            iterations: Infinity
+          }
+        );
+        if (cellInfo.run === 0) {
+          animation.pause();
+        }
       }
     }
   }
@@ -281,7 +301,8 @@ class App {
     this.state = {
       savedTicks: 0,
       cells: {},
-      totalLuck: 0
+      totalLuck: 0,
+      threshold: 0
     };
 
     if (rawState !== null) {
@@ -374,6 +395,11 @@ class App {
     window.location.reload();  
   }
 
+  floorDigits(v, d) {
+    const scale = Math.pow(10, d);
+    return (Math.floor(v * scale) / scale).toFixed(d); 
+  }
+
   draw() {
     let minTimeRemaining = Infinity;
     let totalTimeRemaining = 0;
@@ -401,7 +427,7 @@ class App {
         incompleteClickable = incompleteClickable || (cell.cmp === 0 && clickable);
 
         //only do remaining cell specific DOM actions if this cell has been updated
-        if (cell.upd === 0 && !this.updateForLuck) {continue;}
+        if (cell.upd === 0 && !this.forceRedraw) {continue;}
         cell.upd = 0;
 
         const expectedValueStr = cell.exp.toFixed(0);
@@ -417,19 +443,26 @@ class App {
         baseLuck = this.calcLuck(cell);
 
         if (baseLuck < this.minLuck) {
-          this.UI[`luck_${RC}`].textContent = `${this.minLuck.toFixed(1)} (${baseLuck.toFixed(1)})`;
+          this.UI[`luck_${RC}`].textContent = `${this.floorDigits(this.minLuck, 2)} (${this.floorDigits(baseLuck, 2)})`;
         } else {
-          this.UI[`luck_${RC}`].textContent = `${baseLuck.toFixed(1)}`
+          this.UI[`luck_${RC}`].textContent = `${this.floorDigits(baseLuck, 2)}`
         }
 
-        this.UI[`symbol_${RC}`].style.display = baseLuck < 0 ? 'block' : 'none';
+        this.UI[`symbol_${RC}`].style.display = (cell.cnt > 1) && (baseLuck < this.state.threshold) ? 'block' : 'none';
+        if (cell.run === 1) {
+          this.UI[`run_${RC}`].style.display = 'block';
+          this.UI[`run_${RC}`].getAnimations()[0].play();
+        } else {
+          this.UI[`run_${RC}`].style.display = 'none';
+          this.UI[`run_${RC}`].getAnimations()[0].pause();
+        }
           
-        this.UI[`time_${RC}`].textContent = `${this.remainingToStr(expTime)}`;
+        this.UI[`time_${RC}`].textContent = this.remainingToStr(expTime);
+
 
       }
     }
 
-    //TODO: remove forceWin
     if (this.state.cells[`${this.rows},${this.rows}`].cmp === 1 && this.state.endTime === undefined) {
       this.state.endTime = (new Date()).getTime();
       const playTime = this.state.endTime - this.state.gameStart;
@@ -439,7 +472,7 @@ class App {
       this.saveToStorage();
     }
 
-    this.updateForLuck = false;
+    this.forceRedraw = false;
     
     const curTime = (new Date()).getTime();
     if (this.state.endTime === undefined) {
@@ -450,7 +483,7 @@ class App {
     const minTimeRemainingStr = this.remainingToStr(minTimeRemaining);
     this.UI.infoNext.textContent = minTimeRemainingStr;
     this.UI.infoTimeRemaining.textContent = this.remainingToStr(totalTimeRemaining);
-    this.UI.infoLuckTick.textContent = `${this.state.totalLuck.toFixed(1)} / ${this.tickPeriod.toFixed(3)} ms${this.state.savedTicks > 10 ? ' +' : ''}`;
+    this.UI.infoLuckTick.textContent = `${this.floorDigits(this.state.totalLuck, 2)} / ${this.floorDigits(this.tickPeriod, 3)} ms${this.state.savedTicks > 10 ? ' +' : ''}`;
 
     
     const percent = 100 * completeCount / this.totalCount;
@@ -484,7 +517,7 @@ class App {
         this.state.totalLuck -= cell.lck * cell.cnt;
         cell.lck = Math.max(this.minLuck, this.calcLuck(cell));
         this.state.totalLuck += cell.lck * cell.cnt;
-        this.updateForLuck = true;
+        this.forceRedraw = true;
       }
     });
   }
@@ -632,6 +665,13 @@ class App {
     animation.onfinish = () => {
       confetti.remove();
     };
+  }
+
+  threshSliderChange() {
+    const sliderValStr = this.UI.infoThreshSlider.value;
+    this.UI.infoThreshDisp.textContent = sliderValStr;
+    this.state.threshold = parseFloat(sliderValStr);
+    this.forceRedraw = true;;
   }
 }
 

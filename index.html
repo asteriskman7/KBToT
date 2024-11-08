@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono&display=swap" rel="stylesheet"> -->
     <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,100..900;1,100..900&family=Borel&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">    
   </head>
@@ -17,7 +16,8 @@
       <div>Total play time: <span id='infoPlayTime'></span></div>
       <div>Next completion in: <span id='infoNext'></span></div>
       <div>Total time remaining: <span id='infoTimeRemaining'></span></div>
-      <div>Total luck / tick rate: <span id='infoLuckTick'>238072 / 32.43</span></div>
+      <div>Total luck / tick length: <span id='infoLuckTick'>238072 / 32.43</span></div>
+      <div>Symbol threshold: <input id='infoThreshSlider' type='range' min='-1.2' max='1.2' value='0' step='0.05'><span id='infoThreshDisp'>0.0</span></div>
       <div id='infoProgressContainer'><div id='infoProgress'></div></div>
       <div>There are no upgrades.<br>There is only the luck you have gained from being in the same plane of existence as Kristen Bell.</div>
       <hr>
@@ -42,26 +42,28 @@
           </div>
           <div>
             <ul>
-              <li>Each cell has a value, N, based on the <a href='https://en.wikipedia.org/wiki/Bell_triangle'>Bell Triangle</a>.</li>
+              <li>Each cell in the triangle has a value, N, based on the <a href='https://en.wikipedia.org/wiki/Bell_triangle'>Bell Triangle</a>.</li>
               <li>All previous cells must be complete at least once before a cell can be activated.</li>
-              <li>When active, a cell randomly generates values in [1,N] (with replacement) until it has found them all.</li>
-              <li>When a cell is complete, you gain luck based on how many attempts it took you (multiplied by N).</li>
-              <li>To avoid a potentially devistating result, negative luck is capped at -1.2</li>
-              <li>The rate at which values are generated is based on the total luck you have gained.</li>
+              <li>When active, a cell randomly draws values in [1,N] (with replacement) until all of them have been found.</li>
+              <li>On cell completion, you gain luck based on how many numbers were drawn.</li>
+              <li>The luck gain is the standard deviations away from the expected number of attempts multiplied by N.</li>
+              <li>To avoid a potentially devistating result, negative luck is capped at -1.2*N</li>
+              <li>The rate at which values are drawn is based on your total luck.</li>
               <li>Once complete, you can re-run a cell to try and improve your luck but you may end up with a worse result.</li>
               <li>The game saves every 5 seconds.</li>
               <li>Extra cycles are run to catch up offline time, though long away times may never fully catch up.</li>
+              <li>Use the slider in the info box to set the threshold for the - symbol to display unlucky cells.</li>
               <li>Complete all cells to win the game!</li>
             </ul>
           </div>
           <div>
             Each cell has 5 lines of information:
             <ol>
-              <li>Cell value (and - symbol if luck is less than 0)</li>
-              <li>Expected number of tries</li>
-              <li>Tries so far : values remaining</li>
-              <li>Luck (standard deviations from expected number of tries)</li>
-              <li>Estimated time remaining</li>
+              <li>Cell value (and threshold indicator)</li>
+              <li>Expected number of draws</li>
+              <li>Draws so far : values remaining to be found</li>
+              <li>Luck</li>
+              <li>Estimated time remaining (and run indicator)</li>
             </ol>
           </div>
         </div>
