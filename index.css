@@ -75,6 +75,16 @@ dialog {
   margin-top: 5px;
 }
 
+#infoNext {
+  display: inline-block;
+  width: 7.5em;
+}
+
+#infoNextCheck {
+  position: relative;
+  top: 3px;
+}
+
 #infoThreshSlider {
   position: relative;
   top: 4px;

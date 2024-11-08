@@ -214,7 +214,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime,infoThreshSlider,infoThreshDisp'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime,infoThreshSlider,infoThreshDisp,infoNextCheck'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -235,6 +235,8 @@ class App {
     this.UI.infoThreshSlider.oninput = () => this.threshSliderChange();
     this.UI.infoThreshSlider.value = this.state.threshold;
     this.threshSliderChange();
+    this.UI.infoNextCheck.onchange = () => this.nextCheckChange();
+    this.UI.infoNextCheck.checked = this.state.any;
 
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
@@ -302,7 +304,8 @@ class App {
       savedTicks: 0,
       cells: {},
       totalLuck: 0,
-      threshold: 0
+      threshold: 0,
+      any: false
     };
 
     if (rawState !== null) {
@@ -412,9 +415,12 @@ class App {
         completeCount += cell.cmp === 1 ? cell.cnt : cell.fnd;
         const expTime = cell.run === 1 ? this.calcExpTime(cell) : this.calcExpTime(cell, true);
         totalTimeRemaining += cell.cmp === 0 ? expTime : 0;
-        if (cell.run === 1 && cell.cmp === 0) {
-          minTimeRemaining = Math.min(minTimeRemaining, expTime);
+        if (cell.run === 1) {
+          if (this.state.any || cell.cmp === 0) {
+            minTimeRemaining = Math.min(minTimeRemaining, expTime);
+          }
         }
+
         const clickable = this.isCellClickable(row, col);
         const cellE = this.UI[`cell_${RC}`];
         if (clickable) {
@@ -672,6 +678,11 @@ class App {
     this.UI.infoThreshDisp.textContent = sliderValStr;
     this.state.threshold = parseFloat(sliderValStr);
     this.forceRedraw = true;;
+  }
+
+  nextCheckChange() {
+    const checkVal = this.UI.infoNextCheck.checked;
+    this.state.any = checkVal;
   }
 }
 
