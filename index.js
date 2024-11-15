@@ -4,6 +4,16 @@
   TODO:
   confirm mobile support
 
+Fans of true beauty, rejoice, for I bring you [Kristen Bell's Triangle of Transcendence](https://asteriskman7.github.io/KBToT/)!
+
+This game will have you filling in cells like nobody's business and will have true Kristen Bell fanatics feeling like they're on the top of the forking world.
+
+Sure, the game is also based on some [fancy math thing from a dude named Eric](https://en.wikipedia.org/wiki/Bell_triangle) but it's easy to let it go when you've got Kristen "Queen" Bell staring back at you! It's like she's saying, "Listen kiddo, you're doing a great job filling in those cells!"
+
+So, if you're ready to join the ranks of the unhinged Kristen Bell fandom, try [Kristen Bell's Triangle of Transcendence](https://asteriskman7.github.io/KBToT/), embrace the pandemonium and find happiness in the unique insanity of being here, now. Who knows, maybe Kristen herself will see your progress and declare you the ultimate fan!
+
+(This game is mostly idle and will take "a while" but can be completed before the heat death of the universe, unlike some games with "Prestige" in the name.)
+
 */
 
 class App {
@@ -22,6 +32,10 @@ class App {
     this.minLuck = -1.2;
     this.favicons = ['./favicon.png', './faviconAlert.png'];
     this.forceRedraw = true;
+    this.findCells = {};
+    this.confettiCount = 0;
+    this.confettiLimit = 100;
+    this.tickPeriod = 1000;
 
     this.initCells();
 
@@ -61,6 +75,8 @@ class App {
     return val;
   }
 
+  //return the sum of 1/i for i in [1,n]
+  //for "large" values of n, use an approximation
   getHarmonic(n) {
     let result;
     //if n is small, calculate directly, otherwise, use approximation
@@ -76,16 +92,20 @@ class App {
     return result;
   }
 
+  //return the number of tries it should take, on average, to draw all n values
   getExpectedTries(n) {
     //https://brilliant.org/wiki/coupon-collector-problem/
     return Math.round(this.getHarmonic(n) * n);
   }
 
+  //return the number of additional tries it should take, on average, to draw the last m values of n total
   getExpectedRemainingTries(n, m) {
     //via help from Microsoft Copilot
     return Math.round(this.getHarmonic(n - m) * n);
   }
 
+  //return the standard deviation of the number of tries it should take to draw all n values
+  //for "large" n, use an approximation
   getStdDev(n) {
     //https://brilliant.org/wiki/coupon-collector-problem/
     let variance;
@@ -103,6 +123,7 @@ class App {
     return Math.sqrt(variance);
   }
 
+  //return the number of standard deviations away from the expected number of attempts
   calcLuck(cell) {
     if (cell.cnt === 1) {return 0;}
     return -(cell.att - cell.exp)/cell.std;
@@ -110,7 +131,7 @@ class App {
 
   calcExpTime(cell, restart) {
     const expectedRemainingTries = this.getExpectedRemainingTries(cell.cnt, restart ? 0 : cell.fnd);
-    const expectedRemainingTime = expectedRemainingTries * this.getTickPeriod();
+    const expectedRemainingTime = expectedRemainingTries * this.tickPeriod;
     return expectedRemainingTime;
   }
 
@@ -398,9 +419,18 @@ class App {
     window.location.reload();  
   }
 
+  //convert a float into a string with d decimal places, rounding down
   floorDigits(v, d) {
     const scale = Math.pow(10, d);
     return (Math.floor(v * scale) / scale).toFixed(d); 
+  }
+
+  //from https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+  shuffleArray(array) {
+    for (let i = array.length - 1; i >= 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
   }
 
   draw() {
@@ -408,8 +438,11 @@ class App {
     let totalTimeRemaining = 0;
     let completeCount = 0;
     let incompleteClickable = false;
+    let celli = -1;
+    const confetti = [];
     for (let row = 1; row <= this.rows; row++) {
       for (let col = 1; col <= row; col++) {
+        celli++;
         const RC = `${row},${col}`;
         const cell = this.state.cells[RC]
         completeCount += cell.cmp === 1 ? cell.cnt : cell.fnd;
@@ -435,6 +468,14 @@ class App {
         //only do remaining cell specific DOM actions if this cell has been updated
         if (cell.upd === 0 && !this.forceRedraw) {continue;}
         cell.upd = 0;
+
+        if (this.findCells[celli] === true) {
+          const rect = cellE.getBoundingClientRect();
+          const confettiCount = 5;
+          for (let i = 0; i < confettiCount; i++) {
+            confetti.push({cell: cellE, x: (rect.left + rect.right) * 0.5, y: (rect.top + rect.bottom) * 0.5});
+          }
+        }
 
         const expectedValueStr = cell.exp.toFixed(0);
         const attStr = cell.att.toFixed(0);
@@ -465,10 +506,21 @@ class App {
           
         this.UI[`time_${RC}`].textContent = this.remainingToStr(expTime);
 
-
       }
     }
 
+    //create a random set of desired confetti without going over the confetti limit
+    this.shuffleArray(confetti);
+    for (let i = 0; i < confetti.length; i++) {
+      if (this.confettiCount >= this.confettiLimit) {break;}
+      const c = confetti[i];
+      this.createConfetti(c.cell, c.x, c.y);
+    }
+
+    this.findCells = {};
+
+
+    //game win condition
     if (this.state.cells[`${this.rows},${this.rows}`].cmp === 1 && this.state.endTime === undefined) {
       this.state.endTime = (new Date()).getTime();
       const playTime = this.state.endTime - this.state.gameStart;
@@ -480,6 +532,7 @@ class App {
 
     this.forceRedraw = false;
     
+    //update infobox
     const curTime = (new Date()).getTime();
     if (this.state.endTime === undefined) {
       this.UI.infoPlayTime.textContent = this.remainingToStr(curTime - this.state.gameStart, true);
@@ -495,6 +548,7 @@ class App {
     const percent = 100 * completeCount / this.totalCount;
     this.UI.infoProgress.style.width = `${percent}%`;
 
+    //update favicon
     const icon = this.favicons[+incompleteClickable];
     if (this.UI.linkIcon.href !== icon) {
       this.UI.linkIcon.href = icon;
@@ -506,7 +560,7 @@ class App {
   }
 
   processTick() {
-    this.cellList.forEach( cell => {
+    this.cellList.forEach( (cell, i) => {
       if (cell.run === 0) {return;}
 
       cell.upd = 1;
@@ -515,6 +569,7 @@ class App {
       cell.att += 1;
       if (rndVal <= thresh) {
         cell.fnd += 1;
+        this.findCells[i] = true;
       }
 
       if (cell.fnd >= cell.cnt) {
@@ -523,6 +578,7 @@ class App {
         this.state.totalLuck -= cell.lck * cell.cnt;
         cell.lck = Math.max(this.minLuck, this.calcLuck(cell));
         this.state.totalLuck += cell.lck * cell.cnt;
+        this.tickPeriod = this.getTickPeriod();
         this.forceRedraw = true;
       }
     });
@@ -550,12 +606,13 @@ class App {
   }
 
   tick() {
-    this.tickPeriod = this.getTickPeriod();
+    this.tickPeriod = this.tickPeriod;
     let curTime = (new Date()).getTime();
     const sleepTime = curTime - this.state.lastTick;
     let missingTicks = this.state.savedTicks + sleepTime / this.tickPeriod;
     const stopTime = curTime + this.tickWorkTime;
     const maxTicksPerCycle = 10000;
+    this.findCells = {};
 
     if (this.enableConfetti) {
       const rect = this.UI.winContainer.getBoundingClientRect();
@@ -565,24 +622,25 @@ class App {
       const yb = rect.bottom;
       const confettiCount = 10;
       const confettiChance = 0.1;
+      const confettiParent = this.UI.winContainer;
       if (Math.random() < confettiChance) {
         for (let i = 0; i < confettiCount; i++) {
-          this.createConfetti(xl, yt); 
+          this.createConfetti(confettiParent, xl, yt); 
         }
       }
       if (Math.random() < confettiChance) {
         for (let i = 0; i < confettiCount; i++) {
-          this.createConfetti(xl, yb); 
+          this.createConfetti(confettiParent, xl, yb); 
         }
       }
       if (Math.random() < confettiChance) {
         for (let i = 0; i < confettiCount; i++) {
-          this.createConfetti(xr, yt); 
+          this.createConfetti(confettiParent, xr, yt); 
         }
       }
       if (Math.random() < confettiChance) {
         for (let i = 0; i < confettiCount; i++) {
-          this.createConfetti(xr, yb); 
+          this.createConfetti(confettiParent, xr, yb); 
         }
       }
     }
@@ -640,10 +698,13 @@ class App {
     }
   }
 
-  createConfetti(x, y) {
+  createConfetti(confettiParent, x, y) {
+    if (this.confettiCount >= this.confettiLimit && !this.enableConfetti) {return;}
+    this.confettiCount += 1;
+
     const confetti = document.createElement('div');
     confetti.classList.add('confetti');
-    this.UI.winContainer.appendChild(confetti);
+    confettiParent.appendChild(confetti);
 
     const angle = 2 * Math.PI * Math.random();
     const distance = 150;
@@ -669,6 +730,7 @@ class App {
     });
 
     animation.onfinish = () => {
+      this.confettiCount -= 1;
       confetti.remove();
     };
   }
@@ -684,6 +746,7 @@ class App {
     const checkVal = this.UI.infoNextCheck.checked;
     this.state.any = checkVal;
   }
+
 }
 
 const app = new App();
