@@ -664,13 +664,11 @@ class App {
   }
 
   showModal(id) {
-    document.querySelector('body').classList.add('blur2px');
     this.UI[id].showModal();
   }
 
   closeModal(id) {
     this.UI[id].close();
-    document.querySelector('body').classList.remove('blur2px');
   }
 
   startCell(cellInfo) {
