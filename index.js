@@ -606,7 +606,7 @@ class App {
   }
 
   tick() {
-    this.tickPeriod = this.tickPeriod;
+    this.tickPeriod = this.getTickPeriod();
     let curTime = (new Date()).getTime();
     const sleepTime = curTime - this.state.lastTick;
     let missingTicks = this.state.savedTicks + sleepTime / this.tickPeriod;
