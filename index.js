@@ -98,7 +98,7 @@ class App {
     return Math.round(this.getHarmonic(n) * n);
   }
 
-  //return the number of additional tries it should take, on average, to draw the last m values of n total
+  //return the number of additional tries it should take, on average, to draw the values with n total and m already found
   getExpectedRemainingTries(n, m) {
     //via help from Microsoft Copilot
     return Math.round(this.getHarmonic(n - m) * n);
@@ -127,6 +127,14 @@ class App {
   calcLuck(cell) {
     if (cell.cnt === 1) {return 0;}
     return -(cell.att - cell.exp)/cell.std;
+  }
+
+  //calculate number of stddev away from expected number of attempts assuming the
+  //remaining attempts will take the expected number of tries
+  calcLuckEst(cell) {
+    if (cell.cnt === 1) {return 0;}
+    const expRemaining = this.getExpectedRemainingTries(cell.cnt, cell.fnd);
+    return -(expRemaining + cell.att - cell.exp)/cell.std;
   }
 
   calcExpTime(cell, restart) {
@@ -235,7 +243,7 @@ class App {
   initUI() {
     this.UI = {};
 
-    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime,infoThreshSlider,infoThreshDisp,infoNextCheck'.split(',');
+    const staticIDs = 'cellsContainer,resetButton,resetContainer,resetYes,resetNo,imexContainer,imexShow,imexImport,imexExport,imexClose,imexText,infoPlayTime,infoNext,infoTimeRemaining,infoProgress,infoLuckTick,linkIcon,helpButton,helpContainer,helpClose,winContainer,winClose,winPlayTime,infoThreshSlider,infoThreshDisp,infoNextCheck,infoLuckCheck'.split(',');
     staticIDs.forEach( id => {
       this.UI[id] = document.getElementById(id);
     });
@@ -258,6 +266,8 @@ class App {
     this.threshSliderChange();
     this.UI.infoNextCheck.onchange = () => this.nextCheckChange();
     this.UI.infoNextCheck.checked = this.state.any;
+    this.UI.infoLuckCheck.onchange = () => this.luckCheckChange();
+    this.UI.infoLuckCheck.checked = this.state.est;
 
     for (let row = 1; row <= this.rows; row++) {
       const rowE = this.createElement(this.UI.cellsContainer, 'div', '', 'row');
@@ -326,7 +336,8 @@ class App {
       cells: {},
       totalLuck: 0,
       threshold: 0,
-      any: false
+      any: false,
+      est: false
     };
 
     if (rawState !== null) {
@@ -486,16 +497,8 @@ class App {
         const percent = 100 * cell.fnd / cell.cnt;
         this.UI[`progress_${RC}`].style.width = `${percent}%`;
 
-        let baseLuck;
-        baseLuck = this.calcLuck(cell);
+        this.redrawLuck(cell, RC);
 
-        if (baseLuck < this.minLuck) {
-          this.UI[`luck_${RC}`].textContent = `${this.floorDigits(this.minLuck, 2)} (${this.floorDigits(baseLuck, 2)})`;
-        } else {
-          this.UI[`luck_${RC}`].textContent = `${this.floorDigits(baseLuck, 2)}`
-        }
-
-        this.UI[`symbol_${RC}`].style.display = (cell.cnt > 1) && (baseLuck < this.state.threshold) ? 'block' : 'none';
         if (cell.run === 1) {
           this.UI[`run_${RC}`].style.display = 'block';
           this.UI[`run_${RC}`].getAnimations()[0].play();
@@ -743,6 +746,38 @@ class App {
   nextCheckChange() {
     const checkVal = this.UI.infoNextCheck.checked;
     this.state.any = checkVal;
+  }
+
+  redrawLuck(cell, RC) {
+    let baseLuck;
+    if (this.state.est) {
+      baseLuck = this.calcLuckEst(cell);
+    } else {
+      baseLuck = this.calcLuck(cell);
+    }
+
+    if (baseLuck < this.minLuck) {
+      this.UI[`luck_${RC}`].textContent = `${this.floorDigits(this.minLuck, 2)} (${this.floorDigits(baseLuck, 2)})`;
+    } else {
+      this.UI[`luck_${RC}`].textContent = `${this.floorDigits(baseLuck, 2)}`
+    }
+    this.UI[`symbol_${RC}`].style.display = (cell.cnt > 1) && (baseLuck < this.state.threshold) ? 'block' : 'none';
+  }
+
+  redrawAllLuck() {
+    for (let row = 1; row <= this.rows; row++) {
+      for (let col = 1; col <= row; col++) {
+        const RC = `${row},${col}`;
+        const cell = this.state.cells[RC];
+        this.redrawLuck(cell, RC);
+      }
+    }
+  }
+
+  luckCheckChange() {
+    const checkVal = this.UI.infoLuckCheck.checked;
+    this.state.est = checkVal;
+    this.redrawAllLuck();
   }
 
 }
